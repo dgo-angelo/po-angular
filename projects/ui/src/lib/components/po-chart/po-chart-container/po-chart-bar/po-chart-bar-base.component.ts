@@ -87,19 +87,17 @@ export abstract class PoChartBarBaseComponent {
       if (Array.isArray(serie.data)) {
         let pathCoordinates: Array<PoChartBarCoordinates> = [];
 
-        serie.data.forEach((serieValue, serieDataIndex) => {
-          if (this.mathsService.verifyIfFloatOrInteger(serieValue)) {
-            const coordinates = this.barCoordinates(seriesIndex, serieDataIndex, containerSize, range, serieValue);
+        serie.data.forEach((data, serieDataIndex) => {
+          if (this.mathsService.verifyIfFloatOrInteger(data)) {
+            const coordinates = this.barCoordinates(seriesIndex, serieDataIndex, containerSize, range, data);
 
             const category = this.serieCategory(serieDataIndex, this.categories);
             const label = serie['label'];
             const color = serie['color'];
-            const tooltipLabel = this.serieLabel(serieValue, label);
+            const tooltip = serie['tooltip'];
+            const tooltipLabel = this.getTooltipLabel(data, label, tooltip);
 
-            pathCoordinates = [
-              ...pathCoordinates,
-              { category, color, label, tooltipLabel, data: serieValue, coordinates }
-            ];
+            pathCoordinates = [...pathCoordinates, { category, color, label, tooltipLabel, data, coordinates }];
           }
         });
 
@@ -108,14 +106,15 @@ export abstract class PoChartBarBaseComponent {
     });
   }
 
-  private serieCategory(index: number, categories: Array<string> = []) {
-    return categories[index] ?? undefined;
+  private getTooltipLabel(data: number, label: string, tooltipLabel: string) {
+    const dataLabel = label ? `${label}: ` : '';
+    const dataValue = data.toString();
+
+    return tooltipLabel || `${dataLabel}${dataValue}`;
   }
 
-  private serieLabel(serieValue: number, label: string) {
-    const hasLabel = label !== null && label !== undefined && label !== '';
-
-    return hasLabel ? `${label}: ${serieValue}` : serieValue.toString();
+  private serieCategory(index: number, categories: Array<string> = []) {
+    return categories[index] ?? undefined;
   }
 
   protected abstract barCoordinates(
