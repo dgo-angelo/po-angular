@@ -13,7 +13,6 @@ import { PoChartOptions } from './interfaces/po-chart-options.interface';
 
 const poChartDefaultHeight = 400;
 const poChartMinHeight = 200;
-const poChartTypeDefault = PoChartType.Pie;
 
 export type PoChartSeries = Array<
   PoDonutChartSeries | PoPieChartSeries | PoChartGaugeSerie | PoLineChartSeries | PoBarChartSeries | PoColumnChartSeries
@@ -43,12 +42,11 @@ export abstract class PoChartBaseComponent {
   private _series:
     | Array<PoDonutChartSeries | PoPieChartSeries | PoLineChartSeries | PoBarChartSeries | PoColumnChartSeries>
     | PoChartGaugeSerie;
-  private _type: PoChartType = poChartTypeDefault;
+  private _type: PoChartType;
 
   // manipulação das séries tratadas internamente para preservar 'p-series';
   chartSeries: PoChartSeries;
-
-  public readonly poChartType = PoChartType;
+  chartType: PoChartType;
 
   /**
    * @optional
@@ -82,6 +80,28 @@ export abstract class PoChartBaseComponent {
   }
 
   /**
+   * @optional
+   *
+   * @description
+   *
+   * Define o tipo de gráfico.
+   *
+   * > Veja os valores válidos no *enum* `PoChartType`.
+   *
+   * @default `PoChartType.Pie`
+   */
+  @Input('p-type') set type(value: PoChartType) {
+    this._type = value;
+    this.chartType = (<any>Object).values(PoChartType).includes(value) ? value : PoChartType.Pie;
+
+    this.rebuildComponentRef();
+  }
+
+  get type(): PoChartType {
+    return this._type;
+  }
+
+  /**
    * @description
    *
    * Define os elementos do gráfico que serão criados dinamicamente.
@@ -93,9 +113,15 @@ export abstract class PoChartBaseComponent {
   ) {
     this._series = value || [];
 
-    this.chartSeries = Array.isArray(this._series)
-      ? [...this._series]
-      : this.transformObjectToArrayObject(this._series);
+    if (Array.isArray(this._series)) {
+      if (!this.type) {
+        this.setTypeDefault(this._series[0]);
+      }
+
+      this.chartSeries = [...this._series];
+    } else {
+      this.chartSeries = this.transformObjectToArrayObject(this._series);
+    }
 
     this.rebuildComponentRef();
   }
@@ -125,27 +151,6 @@ export abstract class PoChartBaseComponent {
 
   /** Define o título do gráfico. */
   @Input('p-title') title?: string;
-
-  /**
-   * @optional
-   *
-   * @description
-   *
-   * Define o tipo de gráfico.
-   *
-   * > Veja os valores válidos no *enum* `PoChartType`.
-   *
-   * @default `PoChartType.Pie`
-   */
-  @Input('p-type') set type(value: PoChartType) {
-    this._type = (<any>Object).values(PoChartType).includes(value) ? value : poChartTypeDefault;
-
-    this.rebuildComponentRef();
-  }
-
-  get type(): PoChartType {
-    return this._type;
-  }
 
   /**
    * @optional
@@ -219,6 +224,13 @@ export abstract class PoChartBaseComponent {
 
   private transformObjectToArrayObject(serie: PoChartGaugeSerie) {
     return typeof serie === 'object' && Object.keys(serie).length ? [{ ...serie }] : [];
+  }
+
+  private setTypeDefault(serie: any) {
+    const data = serie.data ?? serie.value;
+    const serieType = (<any>Object).values(PoChartType).includes(serie.type) ? serie.type : undefined;
+
+    this.chartType = serieType ? serieType : Array.isArray(data) ? PoChartType.Column : PoChartType.Pie;
   }
 
   // válido para gráficos do tipo circular e que será refatorado.

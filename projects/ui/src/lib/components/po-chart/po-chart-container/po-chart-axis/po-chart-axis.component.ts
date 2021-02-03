@@ -28,7 +28,6 @@ export class PoChartAxisComponent {
   private gridLines: number = PoChartGridLines;
   private minMaxAxisValues: PoChartMinMaxValues;
   private seriesLength: number = 0;
-  private hasAxisSideSpacing: boolean;
   private acceptNegativeValues: boolean;
 
   private _axisOptions: PoChartAxisOptions;
@@ -39,9 +38,7 @@ export class PoChartAxisComponent {
 
   @Input('p-type') set type(value: PoChartType) {
     this._type = value;
-
-    this.hasAxisSideSpacing = this._type === PoChartType.Line;
-    this.acceptNegativeValues = this.hasAxisSideSpacing;
+    this.acceptNegativeValues = this._type === PoChartType.Line;
   }
 
   get type() {
@@ -190,24 +187,7 @@ export class PoChartAxisComponent {
   }
 
   private calculateAxisYCoordinates(amountOfAxisY: number, containerSize: PoChartContainerSize, type: PoChartType) {
-    return this.hasAxisSideSpacing
-      ? this.categoriesDefinedByLines(containerSize, amountOfAxisY)
-      : this.categoriesDefinedByAreas(containerSize, amountOfAxisY, type);
-  }
-
-  private categoriesDefinedByLines(containerSize: PoChartContainerSize, amountOfAxisY: number) {
-    const startY = PoChartPlotAreaPaddingTop;
-    const endY = containerSize.svgPlottingAreaHeight + PoChartPlotAreaPaddingTop;
-
-    const axisCoordinates = [...Array(amountOfAxisY)].map((_, index: number) => {
-      const xCoordinate = this.beneathCategoryLine(containerSize, index);
-
-      const coordinates = `M${xCoordinate} ${startY} L${xCoordinate}, ${endY}`;
-
-      return { coordinates };
-    });
-
-    this.axisYCoordinates = [...axisCoordinates];
+    this.categoriesDefinedByAreas(containerSize, amountOfAxisY, type);
   }
 
   private categoriesDefinedByAreas(containerSize: PoChartContainerSize, amountOfAxisY: number, type: PoChartType) {
@@ -239,9 +219,7 @@ export class PoChartAxisComponent {
     this.axisYLabelCoordinates = [...Array(amountOfAxisY)].map((_, index: number) => {
       const label = axisYLabels[index];
 
-      const xCoordinate = this.hasAxisSideSpacing
-        ? this.beneathCategoryLine(containerSize, index)
-        : this.centeredInCategoryArea(containerSize, amountOfAxisY, type, index);
+      const xCoordinate = this.centeredInCategoryArea(containerSize, amountOfAxisY, type, index);
       const yCoordinate = this.calculateAxisYLabelYCoordinate(containerSize);
 
       return { label, xCoordinate, yCoordinate };
@@ -309,13 +287,6 @@ export class PoChartAxisComponent {
     return Math.round(
       PoChartAxisXLabelArea + halfCategoryWidth + (containerSize.svgWidth - PoChartAxisXLabelArea) * xRatio
     );
-  }
-
-  private beneathCategoryLine(containerSize: PoChartContainerSize, index: number): number {
-    const divideIndexBySeriesLength = index / (this.seriesLength - 1);
-    const xRatio = isNaN(divideIndexBySeriesLength) ? 0 : divideIndexBySeriesLength;
-
-    return Math.round(PoChartAxisXLabelArea + containerSize.svgPlottingAreaWidth * xRatio);
   }
 
   private calculateAxisYCoordinateX(
